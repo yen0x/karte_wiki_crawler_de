@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/yen0x/karte_wiki_crawler_de/model"
+	"strings"
 )
 
 type KarteParser struct {
@@ -20,6 +21,7 @@ func NewKarteParser(url string) *KarteParser {
 		k.Doc = doc
 	}
 	k.Card = &model.Karte{}
+	k.Card.WikiUrl = url
 
 	return k
 }
@@ -27,6 +29,9 @@ func NewKarteParser(url string) *KarteParser {
 func (k *KarteParser) Run() *model.Karte {
 	k.FindNames()
 	k.FindAttrAndRank()
+	k.FindTrAttributes()
+	k.FindPictureUrl()
+	k.FindCategories()
 	return k.Card
 }
 
@@ -34,11 +39,11 @@ func (k *KarteParser) FindNames() {
 	k.Doc.Find("big").Each(func(i int, s *goquery.Selection) {
 		switch i {
 		case 0:
-			k.Card.CardNameGer = s.Text()
+			k.Card.NameGer = s.Text()
 		case 3:
-			k.Card.CardNameJa = s.Text()
+			k.Card.NameJa = s.Text()[3:]
 		case 4:
-			k.Card.CardNameEn = s.Text()
+			k.Card.NameEn = s.Text()[3:]
 		}
 
 	})
@@ -47,4 +52,32 @@ func (k *KarteParser) FindNames() {
 func (k *KarteParser) FindAttrAndRank() {
 	k.Card.MonsterAttr = k.Doc.Find("tr td i").First().Text()
 	k.Card.MonsterRank = k.Doc.Find("tr td i").Get(2).FirstChild.Data[1:2]
+}
+
+func (k *KarteParser) FindTrAttributes() {
+	k.Doc.Find("tr td").Each(func(i int, s *goquery.Selection) {
+		switch i {
+		case 21:
+			k.Card.MonsterAttack = strings.TrimSpace(s.Text())
+		case 22:
+			k.Card.MonsterDefense = strings.TrimSpace(s.Text())
+		case 23:
+			k.Card.Code = strings.TrimSpace(s.Text())
+		case 24:
+			k.Card.EffectType = strings.TrimSpace(s.Text())
+		case 26:
+			k.Card.Description = strings.TrimSpace(s.Text())
+		}
+	})
+}
+
+func (k *KarteParser) FindPictureUrl() {
+	k.Card.PictureUrl, _ = k.Doc.Find("tr td a img").First().Attr("src")
+	k.Card.PictureUrl = "http://yugioh-wiki.de" + k.Card.PictureUrl
+}
+
+func (k *KarteParser) FindCategories() {
+	k.Doc.Find(".mw-normal-catlinks ul li a").Each(func(i int, s *goquery.Selection) {
+		k.Card.Categories = append(k.Card.Categories, s.Text())
+	})
 }

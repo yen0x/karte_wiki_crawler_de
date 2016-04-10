@@ -1,10 +1,22 @@
 package model
 
 type Karte struct {
-	CardNameGer string `json:"cardNameGer"`
-	CardNameJa  string `json:"cardNameJa"`
-	CardNameEn  string `json:"cardNameEn"`
+	Code string `json:"cardCode"`
 
-	MonsterAttr string `json:"monsterAttribute"`
-	MonsterRank string `json:"monsterRank"`
+	Categories []string `json:"cardCategories"`
+
+	NameGer string `json:"cardNameGer"`
+	NameJa  string `json:"cardNameJa"`
+	NameEn  string `json:"cardNameEn"`
+
+	Description string `json:"cardDescription"`
+	EffectType  string `json:"effectType"`
+
+	MonsterAttr    string `json:"monsterAttribute"`
+	MonsterRank    string `json:"monsterRank"`
+	MonsterAttack  string `json:"monsterAttack"`
+	MonsterDefense string `json:"monsterDefense"`
+
+	PictureUrl string `json:"pictureUrl"`
+	WikiUrl    string `json:"wikiUrl"`
 }
