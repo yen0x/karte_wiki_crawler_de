@@ -7,9 +7,21 @@ import (
 )
 
 func main() {
-	kparser := parser.NewKarteParser("http://yugioh-wiki.de/wiki/Chaos_End-Meister")
+	lparser := parser.NewCardLinkParser("http://yugioh-wiki.de/wiki/Kategorie:Yugioh_Karte")
+	links, nextPage := lparser.Run()
+	linkCounter := 0
+	for len(nextPage) > 0 {
+		fmt.Println("NEXT PAGE: " + nextPage)
 
-	card := kparser.Run()
-	data, _ := json.Marshal(card)
-	fmt.Println(string(data))
+		for _, url := range links {
+			fmt.Printf("%d -- %s\n", linkCounter, url)
+			linkCounter++
+			kparser := parser.NewKarteParser(url)
+			card := kparser.Run()
+			data, _ := json.Marshal(card)
+			fmt.Println(string(data))
+		}
+		lparser.SetUrl(nextPage)
+		links, nextPage = lparser.Run()
+	}
 }

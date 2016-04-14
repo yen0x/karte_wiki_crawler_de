@@ -51,7 +51,10 @@ func (k *KarteParser) FindNames() {
 
 func (k *KarteParser) FindAttrAndRank() {
 	k.Card.MonsterAttr = k.Doc.Find("tr td i").First().Text()
-	k.Card.MonsterRank = k.Doc.Find("tr td i").Get(2).FirstChild.Data[1:2]
+
+	if k.Doc.Find("tr td i").Length() > 2 {
+		k.Card.MonsterRank = stripchars(k.Doc.Find("tr td i").Get(2).FirstChild.Data, "()")
+	}
 }
 
 func (k *KarteParser) FindTrAttributes() {
@@ -73,11 +76,20 @@ func (k *KarteParser) FindTrAttributes() {
 
 func (k *KarteParser) FindPictureUrl() {
 	k.Card.PictureUrl, _ = k.Doc.Find("tr td a img").First().Attr("src")
-	k.Card.PictureUrl = "http://yugioh-wiki.de" + k.Card.PictureUrl
+	k.Card.PictureUrl = BASE_URL + k.Card.PictureUrl
 }
 
 func (k *KarteParser) FindCategories() {
 	k.Doc.Find(".mw-normal-catlinks ul li a").Each(func(i int, s *goquery.Selection) {
 		k.Card.Categories = append(k.Card.Categories, s.Text())
 	})
+}
+
+func stripchars(str, chr string) string {
+	return strings.Map(func(r rune) rune {
+		if strings.IndexRune(chr, r) < 0 {
+			return r
+		}
+		return -1
+	}, str)
 }
