@@ -17,7 +17,7 @@ func (l *LinkParser) SetChannel(c chan string) {
 func (l *LinkParser) FindCardLinks(url string) (links []string) {
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		fmt.Println("Error:" + err.Error())
+		fmt.Printf("Find card links error: %s for url %s\n", err.Error(), url)
 		return
 	}
 	doc.Find("div#mw-pages div.mw-category div.mw-category-group ul li a").Each(func(i int, s *goquery.Selection) {

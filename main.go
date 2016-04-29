@@ -15,8 +15,8 @@ func main() {
 
 	nextPageChannel := make(chan string)
 	cards := make([]*model.Karte, 0)
-	//url := "http://yugioh-wiki.de/wiki/Kategorie:Yugioh_Karte"
-	url := "http://yugioh-wiki.de/w/index.php?title=Kategorie:Yugioh_Karte&pagefrom=Zweiklauen-Angriff#mw-pages"
+	url := "http://yugioh-wiki.de/wiki/Kategorie:Yugioh_Karte"
+	//url := "http://yugioh-wiki.de/w/index.php?title=Kategorie:Yugioh_Karte&pagefrom=Zweiklauen-Angriff#mw-pages"
 
 	linkCounter := 0
 	previousCounter := 0
@@ -29,41 +29,14 @@ func main() {
 	for parse {
 		select {
 		case nextPage := <-nextPageChannel:
-			go func() {
-				if len(nextPage) > 0 {
-					fmt.Println("NEXT PAGE " + nextPage)
-					lparser.FindCardLinks(nextPage)
-					nextPageChannel <- lparser.FindNextLinkPage(nextPage)
-				}
-			}()
+			go getLinks(nextPage, lparser, nextPageChannel)
 		case link := <-lparser.LinksChannel:
-			go func() {
-				for retry := 0; retry < 2; retry++ {
-					kparser := parser.NewKarteParser(link)
-					if kparser != nil {
-						card := kparser.Run()
-						//			data, _ := json.Marshal(card)
-						fmt.Printf("Parsing card %d\n", linkCounter)
-						linkCounter++
-						//			fmt.Println(string(data))
-						cards = append(cards, card)
-					}
-				}
-			}()
+			go getCards(link, &linkCounter, &cards)
 		default:
-			if previousCounter == linkCounter {
-				if duration := time.Since(previousTime); duration.Seconds() > 5.0 {
-					fmt.Println("Quitting")
-					parse = false
-				}
-			} else {
-				previousTime = time.Now()
-				previousCounter = linkCounter
-			}
-
+			quitParsing(&previousCounter, &linkCounter, &previousTime, &parse)
 		}
 	}
-
+	// Print to file
 	cardsBytes, err := json.MarshalIndent(cards, "", "  ")
 	if err != nil {
 		panic(err)
@@ -79,22 +52,39 @@ func main() {
 	fmt.Scanln(&input)*/
 }
 
-func getCards(c chan *model.Karte, url string) {
-	fmt.Printf("---%s---\n", url)
-	kparser := parser.NewKarteParser(url)
-	c <- kparser.Run()
-}
-
-func printer(card *model.Karte) {
-	fmt.Println("PRINTER")
-	data, _ := json.Marshal(card)
-	fmt.Println(string(data))
-}
-
-func x() {
+func getLinks(nextPage string, lparser parser.LinkParser, nextPageChannel chan string) {
 	if len(nextPage) > 0 {
-		fmt.Println("NEXT PAGE " + nextPage)
+		fmt.Println("Extracting cards from " + nextPage)
 	}
 	lparser.FindCardLinks(nextPage)
-	nextPageChannel <- lparser.FindNextLinkPage(nextPage)
+	nextLinkPage := lparser.FindNextLinkPage(nextPage)
+	if nextLinkPage != "" {
+		nextPageChannel <- nextLinkPage
+	}
+}
+
+func getCards(link string, linkCounter *int, cards *[]*model.Karte) {
+	for retry := 0; retry < 2; retry++ {
+		kparser := parser.NewKarteParser(link)
+		if kparser != nil {
+			card := kparser.Run()
+			//			data, _ := json.Marshal(card)
+			fmt.Printf("Parsing card %d\n", *linkCounter)
+			*linkCounter++
+			//			fmt.Println(string(data))
+			*cards = append(*cards, card)
+		}
+	}
+}
+
+func quitParsing(previousCounter, linkCounter *int, previousTime *time.Time, parse *bool) {
+	if *previousCounter == *linkCounter {
+		if duration := time.Since(*previousTime); duration.Seconds() > 5.0 {
+			fmt.Println("Quitting")
+			*parse = false
+		}
+	} else {
+		*previousTime = time.Now()
+		*previousCounter = *linkCounter
+	}
 }
