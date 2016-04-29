@@ -16,7 +16,9 @@ func NewKarteParser(url string) *KarteParser {
 	k := &KarteParser{}
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
+		fmt.Println("ERROR on " + url)
 		fmt.Println(err)
+		return nil
 	} else {
 		k.Doc = doc
 	}
